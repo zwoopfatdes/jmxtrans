@@ -13,8 +13,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # Every Vagrant virtual environment requires a box to build off of.
     centos.vm.box = "puppetlabs/centos-6.6-64-nocm"
 
-    centos.vm.provision "shell", path: "build-centos.sh"
-    centos.vm.provision "shell", inline: "yum install /jmxtrans_src/target/rpm/jmxtrans/RPMS/noarch/jmxtrans-*.rpm"
+    centos.vm.provision "shell", path: "prerequisites-centos.sh"
+    centos.vm.provision "shell", inline: "rpm -i --force /jmxtrans_src/target/rpm/jmxtrans/RPMS/noarch/jmxtrans-*.rpm"
+    centos.vm.provision "shell", inline: "/usr/local/bin/bats /jmxtrans_src/vagrant/jmxtrans.bats"
   end
 
   config.vm.define "ubuntu" do |ubuntu|
@@ -23,8 +24,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       v.memory = 1024
     end
 
-    ubuntu.vm.provision "shell", path: "build-ubuntu.sh"
+    ubuntu.vm.provision "shell", path: "prerequisites-ubuntu.sh"
     ubuntu.vm.provision "shell", inline: "DEBIAN_FRONTEND=noninteractive dpkg -i install /jmxtrans_src/target/jmxtrans-*.deb"
+    ubuntu.vm.provision "shell", inline: "/usr/local/bin/bats /jmxtrans_src/vagrant/jmxtrans.bats"
   end
 
 end
