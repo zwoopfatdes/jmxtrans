@@ -99,11 +99,11 @@
 
 	<modules>
 		<module>jmxtrans</module>
-		<module>jmxtrans-utils</module>
-		<module>jmxtrans-output</module>
-		<module>jmxtrans-examples</module>
 		<module>jmxtrans-core</module>
+		<module>jmxtrans-examples</module>
+		<module>jmxtrans-output</module>
 		<module>jmxtrans-test-utils</module>
+		<module>jmxtrans-utils</module>
 	</modules>
 
 	<scm>
@@ -657,6 +657,11 @@
 							</goals>
 						</execution>
 					</executions>
+				</plugin>
+				<plugin>
+					<groupId>com.spotify</groupId>
+					<artifactId>docker-maven-plugin</artifactId>
+					<version>0.3.5</version>
 				</plugin>
 				<plugin>
 					<groupId>de.is24.mavenplugins</groupId>
