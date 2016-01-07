@@ -27,8 +27,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Charsets;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.io.Closer;
 import com.googlecode.jmxtrans.model.Query;
 import com.googlecode.jmxtrans.model.Result;
@@ -36,7 +39,6 @@ import com.googlecode.jmxtrans.model.Server;
 import com.googlecode.jmxtrans.model.ValidationException;
 import com.googlecode.jmxtrans.model.naming.typename.TypeNameValue;
 import com.googlecode.jmxtrans.model.output.BaseOutputWriter;
-import com.googlecode.jmxtrans.model.output.Settings;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,9 +56,13 @@ import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 import static com.fasterxml.jackson.core.JsonEncoding.UTF8;
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.collect.Iterables.concat;
 import static com.googlecode.jmxtrans.model.PropertyResolver.resolveProps;
 import static com.googlecode.jmxtrans.model.naming.KeyUtils.getKeyString;
+import static com.googlecode.jmxtrans.model.output.Settings.getStringSetting;
 import static com.googlecode.jmxtrans.util.NumberUtils.isNumeric;
+import static java.lang.Boolean.FALSE;
 import static java.util.Arrays.asList;
 
 /**
@@ -100,13 +106,13 @@ public class KafkaWriter extends BaseOutputWriter {
 						DEFAULT_ROOT_PREFIX));
 		// Setting all the required Kafka Properties
 		Properties kafkaProperties =  new Properties();
-		kafkaProperties.setProperty("metadata.broker.list", Settings.getStringSetting(settings, "metadata.broker.list", null));
-		kafkaProperties.setProperty("zk.connect", Settings.getStringSetting(settings, "zk.connect", null));
-		kafkaProperties.setProperty("serializer.class", Settings.getStringSetting(settings, "serializer.class", null));
+		kafkaProperties.setProperty("metadata.broker.list", getStringSetting(settings, "metadata.broker.list", null));
+		kafkaProperties.setProperty("zk.connect", getStringSetting(settings, "zk.connect", null));
+		kafkaProperties.setProperty("serializer.class", getStringSetting(settings, "serializer.class", null));
 		this.producer= new Producer<String,String>(new ProducerConfig(kafkaProperties));
-		this.topics = asList(Settings.getStringSetting(settings, "topics", "").split(","));
+		this.topics = asList(MoreObjects.firstNonNull(topics, getStringSetting(settings, "topics", "")).split(","));
 		this.tags = ImmutableMap.copyOf(firstNonNull(tags, (Map<String, String>) getSettings().get("tags"), ImmutableMap.<String, String>of()));
-		this.typeNamesAsTags = Settings.getBooleanSetting(settings, "typeNamesAsTags", Boolean.FALSE);
+		this.typeNamesAsTags = MoreObjects.firstNonNull(typeNamesAsTags, FALSE);
 		jsonFactory = new JsonFactory();
 	}
 
@@ -121,63 +127,54 @@ public class KafkaWriter extends BaseOutputWriter {
 			Map<String, Object> resultValues = result.getValues();
 			for (Entry<String, Object> values : resultValues.entrySet()) {
 				Object value = values.getValue();
-				if (isNumeric(value)) {
-					String message = createJsonMessage(server, query, typeNames, result, values, value);
-					for(String topic : this.topics) {
-						log.debug("Topic: [{}] ; Kafka Message: [{}]", topic, message);
-						producer.send(new KeyedMessage<String, String>(topic, message));
-					}
-				} else {
+				if (!isNumeric(value)) {
 					log.warn("Unable to submit non-numeric value to Kafka: [{}] from result [{}]", value, result);
+					continue;
+				}
+				String message = createJsonMessage(server, query, typeNames, result, values, value);
+				for(String topic : this.topics) {
+					log.debug("Topic: [{}] ; Kafka Message: [{}]", topic, message);
+					producer.send(new KeyedMessage<String, String>(topic, message));
 				}
 			}
 		}
 	}
 
 	private String createJsonMessage(Server server, Query query, List<String> typeNames, Result result, Entry<String, Object> values, Object value) throws IOException {
-
-    // embed type names into the metric name/keystring unless typeNamesAsTags is set
-		String keyString;
-		if (typeNamesAsTags) {
-			keyString = getKeyString(server, query, result, values, null, this.rootPrefix);
-		} else {
-			keyString = getKeyString(server, query, result, values, typeNames, this.rootPrefix);
-		}
-   
-		String cleanKeyString = keyString.replaceAll("[()]", "_");
-
 		Closer closer = Closer.create();
 		try {
 			ByteArrayOutputStream out = closer.register(new ByteArrayOutputStream());
 			JsonGenerator generator = closer.register(jsonFactory.createGenerator(out, UTF8));
 			generator.writeStartObject();
-			generator.writeStringField("keyspace", cleanKeyString);
+			generator.writeStringField("keyspace", typeNamesAsTagsKeyString(server, query, typeNames, result, values));
 			generator.writeStringField("value", value.toString());
 			generator.writeNumberField("timestamp", result.getEpoch() / 1000);
 			generator.writeObjectFieldStart("tags");
-			// static tags
-			for (String tag_key : this.tags.keySet()) {
-				generator.writeStringField(tag_key, this.tags.get(tag_key));
+
+			for (Entry<String, String> tag : getAllTags(result.getTypeName())) {
+				generator.writeStringField(tag.getKey(), tag.getValue());
 			}
-			// typeNames tags
-			if (typeNamesAsTags) {
-				Map<String, String> typeNameMap = TypeNameValue.extractMap(result.getTypeName());
-				for (String oneTypeName : getTypeNames()) {
-					String oneTypeNameValue = typeNameMap.get(oneTypeName);
-					if (oneTypeNameValue == null)
-						oneTypeNameValue = "";
-					generator.writeStringField(oneTypeName, oneTypeNameValue);
-				}
-			}
+
 			generator.writeEndObject();
 			generator.writeEndObject();
 			generator.close();
-			return out.toString("UTF-8");
+			return out.toString(UTF_8.toString());
 		} catch (Throwable t) {
 			throw closer.rethrow(t);
 		} finally {
 			closer.close();
 		}
+	}
+
+	private Iterable<Entry<String, String>> getAllTags(String typeName) {
+		if (typeNamesAsTags) return concat(tags.entrySet(), TypeNameValue.extractMap(typeName).entrySet());
+		return tags.entrySet();
+	}
+
+	/** embed type names into the metric name/keystring unless typeNamesAsTags is set */
+	private String typeNamesAsTagsKeyString(Server server, Query query, List<String> typeNames, Result result, Entry<String, Object> values) {
+		List<String> actualTypeNames = typeNamesAsTags ? ImmutableList.<String>of() : typeNames;
+		return getKeyString(server, query, result, values, actualTypeNames, this.rootPrefix).replaceAll("[()]", "_");
 	}
 
 	@VisibleForTesting
