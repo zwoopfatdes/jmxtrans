@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.googlecode.jmxtrans.util.NumberUtils.isNumeric;
 
 /**
  * This takes a JRobin template.xml file and then creates the database if it
@@ -92,7 +93,7 @@ public class RRDWriter extends BaseOutputWriter {
 				Map<String, Object> values = res.getValues();
 				if (values != null) {
 					for (Entry<String, Object> entry : values.entrySet()) {
-						if (dsNames.contains(entry.getKey()) && NumberUtils.isNumeric(entry.getValue())) {
+						if (dsNames.contains(entry.getKey()) && isNumeric(entry.getValue())) {
 							sample.setValue(entry.getKey(), Double.valueOf(entry.getValue().toString()));
 						}
 					}

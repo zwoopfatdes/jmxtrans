@@ -56,6 +56,7 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.googlecode.jmxtrans.util.NumberUtils.isNumeric;
 
 /**
  * This takes a JRobin template.xml file and then creates the database if it
@@ -142,14 +143,12 @@ public class RRDToolWriter extends BaseOutputWriter {
 			if (values != null) {
 				for (Entry<String, Object> entry : values.entrySet()) {
 					String key = getDataSourceName(getConcatedTypeNameValues(res.getTypeName()), res.getAttributeName(), entry.getKey());
-					boolean isNumeric = NumberUtils.isNumeric(entry.getValue());
 
-					if (isDebugEnabled() && isNumeric) {
-						log.debug("Generated DataSource name:value: " + key + " : " + entry.getValue());
-					}
-
-					if (dsNames.contains(key) && isNumeric) {
-						dataMap.put(key, entry.getValue().toString());
+					if (isNumeric(entry.getValue())) {
+						log.debug("Generated DataSource name:value: {} : {}", key, entry.getValue());
+						if (dsNames.contains(key)) {
+							dataMap.put(key, entry.getValue().toString());
+						}
 					}
 				}
 			}
@@ -173,8 +172,7 @@ public class RRDToolWriter extends BaseOutputWriter {
 				Map<String, Object> values = res.getValues();
 				if (values != null) {
 					for (Entry<String, Object> entry : values.entrySet()) {
-						boolean isNumeric = NumberUtils.isNumeric(entry.getValue());
-						if (isNumeric) {
+						if (isNumeric(entry.getValue())) {
 							String key = getDataSourceName(getConcatedTypeNameValues(res.getTypeName()), res.getAttributeName(), entry.getKey());
 							if (keys.contains(key)) {
 								throw new Exception("Duplicate datasource name found: '" + key

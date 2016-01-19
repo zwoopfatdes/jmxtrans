@@ -39,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static com.googlecode.jmxtrans.util.NumberUtils.isNumeric;
+
 
 /**
  * A writer for Log4J. It may be a nice way to send JMX metrics to Logstash for example. <br /> <br />
@@ -77,7 +79,7 @@ public class Log4JWriter extends BaseOutputWriter {
 			final Map<String, Object> resultValues = result.getValues();
 			if (resultValues != null) {
 				for (final Entry<String, Object> values : resultValues.entrySet()) {
-					if (NumberUtils.isNumeric(values.getValue())) {
+					if (isNumeric(values.getValue())) {
 						String alias;
 						if (server.getAlias() != null) {
 							alias = server.getAlias();
