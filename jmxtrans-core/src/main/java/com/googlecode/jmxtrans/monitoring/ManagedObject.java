@@ -42,19 +42,4 @@ public interface ManagedObject {
 	 */
 	ObjectName getObjectName() throws MalformedObjectNameException;
 
-	/**
-	 * Sets the object name.
-	 *
-	 * @param objectName the object name
-	 * @throws MalformedObjectNameException if the object name is not valid
-	 */
-	void setObjectName(ObjectName objectName) throws MalformedObjectNameException;
-
-	/**
-	 * Sets the object name.
-	 *
-	 * @param objectName the object name
-	 * @throws MalformedObjectNameException if the object name is not valid
-	 */
-	void setObjectName(String objectName) throws MalformedObjectNameException;
 }

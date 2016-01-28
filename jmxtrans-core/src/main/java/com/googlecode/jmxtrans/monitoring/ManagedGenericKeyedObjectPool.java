@@ -65,16 +65,6 @@ public class ManagedGenericKeyedObjectPool implements ManagedGenericKeyedObjectP
 	}
 
 	@Override
-	public void setObjectName(ObjectName objectName) throws MalformedObjectNameException {
-		this.objectName = objectName;
-	}
-
-	@Override
-	public void setObjectName(String objectName) throws MalformedObjectNameException {
-		this.objectName = ObjectName.getInstance(objectName);
-	}
-
-	@Override
 	public int getMaxActive() {
 		return pool.getMaxActive();
 	}

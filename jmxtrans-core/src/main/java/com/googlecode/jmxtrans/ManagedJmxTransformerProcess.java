@@ -139,20 +139,4 @@ public class ManagedJmxTransformerProcess implements ManagedJmxTransformerProces
 		return objectName;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.googlecode.jmxtrans.monitoring.ManagedObject#setObjectName(javax.management.ObjectName)
-	 */
-	@Override
-	public void setObjectName(ObjectName objectName) throws MalformedObjectNameException {
-		this.objectName = objectName;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.googlecode.jmxtrans.monitoring.ManagedObject#setObjectName(java.lang.String)
-	 */
-	@Override
-	public void setObjectName(String objectName) throws MalformedObjectNameException {
-		this.objectName = ObjectName.getInstance(objectName);
-	}
-
 }

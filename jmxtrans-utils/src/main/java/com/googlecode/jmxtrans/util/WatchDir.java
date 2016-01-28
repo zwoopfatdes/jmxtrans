@@ -26,7 +26,6 @@ import name.pachler.nio.file.ClosedWatchServiceException;
 import name.pachler.nio.file.FileSystems;
 import name.pachler.nio.file.Path;
 import name.pachler.nio.file.Paths;
-import name.pachler.nio.file.StandardWatchEventKind;
 import name.pachler.nio.file.WatchEvent;
 import name.pachler.nio.file.WatchKey;
 import name.pachler.nio.file.WatchService;
@@ -39,6 +38,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Maps.newHashMap;
+import static name.pachler.nio.file.StandardWatchEventKind.ENTRY_CREATE;
+import static name.pachler.nio.file.StandardWatchEventKind.ENTRY_DELETE;
+import static name.pachler.nio.file.StandardWatchEventKind.ENTRY_MODIFY;
 
 /**
  * Watch a directory (or tree) for changes to files.
@@ -50,20 +52,16 @@ public class WatchDir extends Thread {
 	private final WatchedCallback watched;
 	private final Map<WatchKey,Path> keys;
 
-	/**
-     * 
-     */
 	public WatchDir(File dir, WatchedCallback watched) throws IOException {
 		this.watched = watched;
 		this.keys = newHashMap();
 		watchService = FileSystems.getDefault().newWatchService();
 		Path watchedPath = Paths.get(dir.getAbsolutePath());
-		WatchKey signalledKey = watchedPath.register(watchService, StandardWatchEventKind.ENTRY_CREATE, StandardWatchEventKind.ENTRY_DELETE, StandardWatchEventKind.ENTRY_MODIFY);
+		WatchKey signalledKey = watchedPath.register(watchService, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
 		// Store the path that we're watching, so we can later retrieve it and build a proper path to the file
 		keys.put(signalledKey, watchedPath);
 	}
 
-	/** */
 	@Override
 	public void run() {
 		for (;;) {
@@ -92,15 +90,15 @@ public class WatchDir extends Thread {
 			Path dir = keys.get(signalledKey);
 			try {
 				for (WatchEvent<?> e : list) {
-					if (e.kind() == StandardWatchEventKind.ENTRY_CREATE) {
+					if (e.kind() == ENTRY_CREATE) {
 						Path context = (Path) e.context();
 						Path fullPath = dir.resolve(context);
 						watched.fileAdded(new File(fullPath.toString()));
-					} else if (e.kind() == StandardWatchEventKind.ENTRY_DELETE) {
+					} else if (e.kind() == ENTRY_DELETE) {
 						Path context = (Path) e.context();
 						Path fullPath = dir.resolve(context);
 						watched.fileDeleted(new File(fullPath.toString()));
-					} else if (e.kind() == StandardWatchEventKind.ENTRY_MODIFY) {
+					} else if (e.kind() == ENTRY_MODIFY) {
 						Path context = (Path) e.context();
 						Path fullPath = dir.resolve(context);
 						watched.fileModified(new File(fullPath.toString()));
@@ -113,7 +111,6 @@ public class WatchDir extends Thread {
 		}
 	}
 
-	/** */
 	public void stopService() throws IOException {
 		watchService.close();
 	}

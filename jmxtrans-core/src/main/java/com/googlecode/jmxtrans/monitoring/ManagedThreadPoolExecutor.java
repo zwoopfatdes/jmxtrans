@@ -29,7 +29,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class ManagedThreadPoolExecutor implements ThreadPoolExecutorMXBean {
+public class ManagedThreadPoolExecutor implements ThreadPoolExecutorMXBean, ManagedObject {
 
 	@Nonnull private final ThreadPoolExecutor executor;
 	private ObjectName objectName;

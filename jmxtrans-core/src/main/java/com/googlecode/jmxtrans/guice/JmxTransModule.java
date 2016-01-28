@@ -88,11 +88,13 @@ public class JmxTransModule extends AbstractModule {
 	}
 
 	@Provides
+	@Singleton
 	JmxTransConfiguration jmxTransConfiguration() {
 		return configuration;
 	}
 
 	@Provides
+	@Singleton
 	@Inject
 	Scheduler scheduler(JmxTransConfiguration configuration, GuiceJobFactory jobFactory) throws SchedulerException, IOException {
 		StdSchedulerFactory serverSchedFact = new StdSchedulerFactory();
