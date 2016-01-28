@@ -339,7 +339,7 @@ public class JmxTransformer implements WatchedCallback {
 			throw new LifecycleException(e);
 		}
 
-		this.masterServersList = configurationParser.parseServers(getJsonFiles(), configuration.isContinueOnJsonError());
+		this.masterServersList = configurationParser.parseServers(getJsonFiles());
 	}
 
 	/**

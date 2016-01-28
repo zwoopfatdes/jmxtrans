@@ -24,6 +24,7 @@ package com.googlecode.jmxtrans;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.name.Named;
 import com.googlecode.jmxtrans.exceptions.LifecycleException;
 import com.googlecode.jmxtrans.model.JmxProcess;
 import com.googlecode.jmxtrans.model.Server;
@@ -42,13 +43,17 @@ public class ConfigurationParser {
 	private static final Logger log = LoggerFactory.getLogger(ConfigurationParser.class);
 
 	private final JsonUtils jsonUtils;
+	private final boolean continueOnJsonError;
 
 	@Inject
-	public ConfigurationParser(JsonUtils jsonUtils) {
+	public ConfigurationParser(
+			JsonUtils jsonUtils,
+			@Named("continueOnJsonError") boolean continueOnJsonError) {
 		this.jsonUtils = jsonUtils;
+		this.continueOnJsonError = continueOnJsonError;
 	}
 
-	public ImmutableList parseServers(Iterable<File> jsonFiles, boolean continueOnJsonError) throws LifecycleException {
+	public ImmutableList<Server> parseServers(Iterable<File> jsonFiles) throws LifecycleException {
 		ServerListBuilder serverListBuilder = new ServerListBuilder();
 		for (File jsonFile : jsonFiles) {
 			try {

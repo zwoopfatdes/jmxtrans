@@ -79,7 +79,8 @@ public class JmxTransModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<GenericKeyedObjectPool<InetSocketAddress, Socket>>(){})
+		bind(new TypeLiteral<GenericKeyedObjectPool<InetSocketAddress, Socket>>() {
+		})
 				.toInstance(getObjectPool(new SocketFactory(), SocketFactory.class.getSimpleName()));
 		bind(new TypeLiteral<GenericKeyedObjectPool<SocketAddress, DatagramSocket>>(){})
 				.toInstance(getObjectPool(new DatagramSocketFactory(), DatagramSocketFactory.class.getSimpleName()));
@@ -135,6 +136,13 @@ public class JmxTransModule extends AbstractModule {
 		int workQueueCapacity = configuration.getResultProcessorExecutorWorkQueueCapacity();
 		String componentName = "result";
 		return createExecutorService(poolSize, workQueueCapacity, componentName);
+	}
+
+	@Provides
+	@Singleton
+	@Named("continueOnJsonError")
+	boolean continueOnJsonError() {
+		return configuration.isContinueOnJsonError();
 	}
 
 	private ThreadPoolExecutor createExecutorService(int poolSize, int workQueueCapacity, String componentName) {

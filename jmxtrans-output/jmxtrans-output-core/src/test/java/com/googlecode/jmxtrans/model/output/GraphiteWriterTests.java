@@ -159,7 +159,7 @@ public class GraphiteWriterTests {
 		boolean continueOnJsonError = true;
 
 		JsonUtils jsonUtils = JmxTransModule.createInjector(new JmxTransConfiguration()).getInstance(JsonUtils.class);
-		ImmutableList servers = new ConfigurationParser(jsonUtils).parseServers(of(testInput), continueOnJsonError);
+		ImmutableList servers = new ConfigurationParser(jsonUtils, continueOnJsonError).parseServers(of(testInput));
 
 		Result result = new Result(System.currentTimeMillis(), "attributeName", "className", "objDomain", null, "typeName", ImmutableMap.of("key", (Object)true));
 

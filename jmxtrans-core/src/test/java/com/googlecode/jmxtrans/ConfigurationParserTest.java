@@ -54,7 +54,7 @@ public class ConfigurationParserTest {
 	@Before
 	public void configureParser() {
 		JsonUtils jsonUtils = createInjector(new JmxTransConfiguration()).getInstance(JsonUtils.class);
-		configurationParser = new ConfigurationParser(jsonUtils);
+		configurationParser = new ConfigurationParser(jsonUtils, continueOnJsonError);
 	}
 
 	@Test(expected = LifecycleException.class)
@@ -64,7 +64,7 @@ public class ConfigurationParserTest {
 
 		boolean continueOnJsonError = false;
 
-		configurationParser.parseServers(of(validInput, invalidInput), continueOnJsonError);
+		configurationParser.parseServers(of(validInput, invalidInput));
 	}
 
 	@Test
@@ -74,7 +74,7 @@ public class ConfigurationParserTest {
 
 		boolean continueOnJsonError = true;
 
-		ImmutableList servers = configurationParser.parseServers(of(validInput, invalidInput), continueOnJsonError);
+		ImmutableList servers = configurationParser.parseServers(of(validInput, invalidInput));
 
 		assertThat(servers).hasSize(1);
 	}
