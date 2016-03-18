@@ -54,7 +54,10 @@ public interface OutputWriter {
 	/**
 	 * Settings allow you to configure your Writers with whatever they might
 	 * need.
+	 *
+	 * @deprecated settings should be injected in constructor.
 	 */
+	@Deprecated
 	Map<String, Object> getSettings();
 
 	/**
