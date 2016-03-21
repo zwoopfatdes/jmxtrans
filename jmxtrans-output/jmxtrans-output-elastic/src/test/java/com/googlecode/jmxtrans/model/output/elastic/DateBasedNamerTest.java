@@ -20,20 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.googlecode.jmxtrans.util;
+package com.googlecode.jmxtrans.model.output.elastic;
 
+import com.googlecode.jmxtrans.util.ManualClock;
 import org.junit.Test;
 
-import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
 
-public class SystemClockTest {
+public class DateBasedNamerTest {
 
-    @Test
-    public void correctTimeIsReturned() {
-        // pretty dumb test, I know...
-        assertThat(new SystemClock().currentTimeMillis()).isCloseTo(currentTimeMillis(), within(100L));
-    }
+	@Test
+	public void nameStartsWithPrefix() {
+		IndexNamer indexNamer = IndexNamer.createIndexNamer("my-prefix-", true, new ManualClock());
+		assertThat(indexNamer.getName()).startsWith("my-prefix-");
+	}
 
+	@Test
+	public void nameEndsWithDate() {
+		ManualClock clock = new ManualClock();
+		clock.setTime(1458508220, SECONDS);
+		IndexNamer indexNamer = IndexNamer.createIndexNamer("my-prefix-", true, clock);
+		assertThat(indexNamer.getName()).endsWith("2016-03-20");
+	}
 }

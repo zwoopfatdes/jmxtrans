@@ -38,9 +38,9 @@
 	<description>This module contains utilities that do not have direct dependencies on JmxTrans.</description>
 
 	<properties>
-		<verify.mutationThreshold>34</verify.mutationThreshold>
-		<verify.totalBranchRate>66</verify.totalBranchRate>
-		<verify.totalLineRate>60</verify.totalLineRate>
+		<verify.mutationThreshold>37</verify.mutationThreshold>
+		<verify.totalBranchRate>67</verify.totalBranchRate>
+		<verify.totalLineRate>66</verify.totalLineRate>
 	</properties>
 
 	<dependencies>
