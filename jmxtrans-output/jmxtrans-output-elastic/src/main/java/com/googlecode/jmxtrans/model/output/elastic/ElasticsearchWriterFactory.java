@@ -22,6 +22,8 @@
  */
 package com.googlecode.jmxtrans.model.output.elastic;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.io.Resources;
 import com.googlecode.jmxtrans.model.OutputWriter;
 import com.googlecode.jmxtrans.model.OutputWriterFactory;
@@ -34,6 +36,8 @@ import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.IndicesExists;
 import io.searchbox.indices.mapping.PutMapping;
+import io.searchbox.indices.template.GetTemplate;
+import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,18 +46,45 @@ import java.io.IOException;
 import java.net.URL;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
 
 public class ElasticsearchWriterFactory implements OutputWriterFactory {
 
 	private static final Logger log = LoggerFactory.getLogger(ElasticsearchWriterFactory.class);
 
 	private final boolean booleanAsNumber;
-	@Nonnull  private final String connectionUrl;
+	private final  boolean rollingIndex;
+	@Nonnull private final String indexName;
+	@Nonnull private final String connectionUrl;
 	static final String ELASTIC_TYPE_NAME = "jmx-entry";
 
-	public ElasticsearchWriterFactory(boolean booleanAsNumber, @Nonnull String connectionUrl) {
+	@JsonCreator
+	public ElasticsearchWriterFactory(
+			@JsonProperty("booleanAsNumber") boolean booleanAsNumber,
+			@JsonProperty("connectionUrl") String connectionUrl,
+			@JsonProperty("rollingIndex") boolean rollingIndex,
+			@JsonProperty("indexName") String indexName) {
 		this.booleanAsNumber = booleanAsNumber;
-		this.connectionUrl = connectionUrl;
+		this.rollingIndex = rollingIndex;
+		this.indexName = firstNonNull(indexName, "jmx-entries");
+		this.connectionUrl = checkNotNull(connectionUrl, "connectionUrl to elasticsearch is required.");
+	}
+
+	@Override
+	@SneakyThrows
+	public OutputWriter create() {
+		JestClient jestClient = createJestClient(connectionUrl);
+
+		if (rollingIndex) createTemplateIfNeeded(jestClient, indexName, ELASTIC_TYPE_NAME);
+		else createMappingIfNeeded(jestClient, indexName, ELASTIC_TYPE_NAME);
+
+		IndexNamer indexNamer = IndexNamer.createIndexNamer(indexName, true, new SystemClock());
+
+		return ResultTransformerOutputWriter.booleanToNumber(
+				booleanAsNumber,
+				new ElasticsearchWriter(jestClient, indexNamer, ELASTIC_TYPE_NAME));
 	}
 
 	@Nonnull
@@ -79,7 +110,7 @@ public class ElasticsearchWriterFactory implements OutputWriterFactory {
 			CreateIndex createIndex = new CreateIndex.Builder(indexName).build();
 			jestClient.execute(createIndex);
 
-			URL url = ElasticWriter.class.getResource("/elastic-mapping.json");
+			URL url = ElasticsearchWriter.class.getResource("/elastic-mapping.json");
 			String mapping = Resources.toString(url, UTF_8);
 
 			PutMapping putMapping = new PutMapping.Builder(indexName, typeName, mapping).build();
@@ -87,21 +118,18 @@ public class ElasticsearchWriterFactory implements OutputWriterFactory {
 			JestResult result = jestClient.execute(putMapping);
 
 			if (!result.isSucceeded()) {
-				throw new IOException(String.format("Failed to create mapping: %s", result.getErrorMessage()));
+				throw new IOException(format("Failed to create mapping: %s", result.getErrorMessage()));
 			} else {
 				log.info("Created mapping for index {}", indexName);
 			}
 		}
 	}
 
-	@Override
-	public OutputWriter create() {
-		JestClient jestClient = createJestClient(connectionUrl);
-		String indexName = "";
-//		createMappingIfNeeded(jestClient, indexName, ELASTIC_TYPE_NAME);
-		IndexNamer indexNamer = IndexNamer.createIndexNamer(indexName, true, new SystemClock());
-		return ResultTransformerOutputWriter.booleanToNumber(
-				booleanAsNumber,
-				new ElasticsearchWriter(jestClient, indexNamer, ELASTIC_TYPE_NAME));
+	private void createTemplateIfNeeded(
+			@Nonnull JestClient jestClient,
+			@Nonnull String indexName,
+			@Nonnull String elasticTypeName) throws IOException {
+		GetTemplate getTemplate = new GetTemplate.Builder(indexName + "-template").build();
+		JestResult result = jestClient.execute(getTemplate);
 	}
 }
