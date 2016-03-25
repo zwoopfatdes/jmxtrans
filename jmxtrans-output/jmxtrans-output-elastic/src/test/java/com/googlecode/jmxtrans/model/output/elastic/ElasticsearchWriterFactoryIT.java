@@ -22,12 +22,14 @@
  */
 package com.googlecode.jmxtrans.model.output.elastic;
 
+import com.googlecode.jmxtrans.test.IntegrationTest;
+import com.googlecode.jmxtrans.test.RequiresIO;
 import com.kaching.platform.testing.AllowLocalFileAccess;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-@Category()
+@Category({IntegrationTest.class, RequiresIO.class})
 @AllowLocalFileAccess(paths = "*")
 public class ElasticsearchWriterFactoryIT extends ESIntegTestCase {
 
