@@ -25,6 +25,10 @@ package com.googlecode.jmxtrans.model.output.elastic;
 import com.googlecode.jmxtrans.test.IntegrationTest;
 import com.googlecode.jmxtrans.test.RequiresIO;
 import com.kaching.platform.testing.AllowLocalFileAccess;
+import org.assertj.core.api.Assertions;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.http.HttpServerTransport;
+import org.elasticsearch.node.Node;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -33,8 +37,24 @@ import org.junit.experimental.categories.Category;
 @AllowLocalFileAccess(paths = "*")
 public class ElasticsearchWriterFactoryIT extends ESIntegTestCase {
 
+	@Override
+	protected Settings nodeSettings(int nodeOrdinal) {
+		return Settings.settingsBuilder()
+				.put(super.nodeSettings(nodeOrdinal))
+				.put(Node.HTTP_ENABLED, true)
+				.build();
+	}
+
 	@Test
 	public void toto() {
+		ElasticsearchWriterFactory factory = new ElasticsearchWriterFactory(true, getHttpEndpoint(), false, "jmx-index");
+		factory.create();
+		Assertions.assertThat(indexExists("jmx-index")).isTrue();
+	}
 
+	private String getHttpEndpoint() {
+		return "http://" + internalCluster()
+				.getDataNodeInstance(HttpServerTransport.class)
+				.boundAddress().publishAddress().getAddress();
 	}
 }
