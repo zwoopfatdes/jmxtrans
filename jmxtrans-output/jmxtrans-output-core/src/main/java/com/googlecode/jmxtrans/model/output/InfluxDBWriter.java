@@ -22,43 +22,31 @@
  */
 package com.googlecode.jmxtrans.model.output;
 
-import com.google.common.collect.ImmutableList;
+import com.googlecode.jmxtrans.model.Query;
 import com.googlecode.jmxtrans.model.Result;
+import com.googlecode.jmxtrans.model.Server;
+import com.googlecode.jmxtrans.model.output.support.WriterBasedOutputWriter;
 import com.googlecode.jmxtrans.model.output.support.influxdb.InfluxDBMessageFormatter;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
 
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.ThreadSafe;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.List;
 
-public class InfluxDBUDPWriter2Test {
+@ThreadSafe
+public class InfluxDBWriter implements WriterBasedOutputWriter {
 
-  private InfluxDBMessageFormatter influxDBMessageFormatter;
-  private InfluxDBUDPWriter2 writer;
-  private Writer outputWriter;
-  private Result result;
+	@Nonnull private final InfluxDBMessageFormatter messageFormatter;
 
-  @Before
-  public void setup() {
-    influxDBMessageFormatter = Mockito.mock(InfluxDBMessageFormatter.class);
-    writer = new InfluxDBUDPWriter2(influxDBMessageFormatter);
-    outputWriter = Mockito.mock(Writer.class);
-    result = Mockito.mock(Result.class);
-  }
+	public InfluxDBWriter(@Nonnull InfluxDBMessageFormatter messageFormatter) {
+		this.messageFormatter = messageFormatter;
+	}
 
-  @Test
-  public void testMultipleSend() throws IOException {
-
-    ImmutableList<Result> results = ImmutableList.of(result, result);
-    List<String> resultsString = ImmutableList.of("Result1", "Result2");
-
-    Mockito.when(influxDBMessageFormatter.formatResults(results)).thenReturn(resultsString);
-
-    writer.write(outputWriter, null, null, results);
-
-    Mockito.verify(outputWriter).write("Result1");
-    Mockito.verify(outputWriter).write("Result2");
-  }
+	@Override
+	public void write(@Nonnull final Writer writer, @Nonnull Server server, @Nonnull Query query, @Nonnull Iterable<Result> results) throws IOException {
+		Iterable<String> strings = messageFormatter.formatResults(results);
+		for (String resultString : strings) {
+			writer.write(resultString);
+		}
+	}
 }

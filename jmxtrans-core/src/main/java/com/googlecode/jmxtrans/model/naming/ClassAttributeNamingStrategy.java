@@ -25,16 +25,20 @@ package com.googlecode.jmxtrans.model.naming;
 import com.googlecode.jmxtrans.model.NamingStrategy;
 import com.googlecode.jmxtrans.model.Result;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+
+import javax.annotation.concurrent.Immutable;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Strategy for naming metrics, tags, and the like given a result.
  */
 
 @EqualsAndHashCode
+@Immutable
+@ThreadSafe
 public class ClassAttributeNamingStrategy implements NamingStrategy {
-	@Getter @Setter protected String delimiter = ".";
+
+	private static final String DELIMITER = ".";
 
 	@Override
 	public String formatName(Result result) {
@@ -42,11 +46,10 @@ public class ClassAttributeNamingStrategy implements NamingStrategy {
 		String attName = result.getAttributeName();
 		String className = result.getKeyAlias();
 
-		if (className == null)
-			className = result.getClassName();
+		if (className == null) className = result.getClassName();
 
 		formatted.append(className);
-		formatted.append(delimiter);
+		formatted.append(DELIMITER);
 		formatted.append(attName);
 
 		return formatted.toString();

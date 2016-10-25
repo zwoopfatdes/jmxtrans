@@ -28,13 +28,10 @@ import com.google.common.collect.ImmutableMap;
 import com.googlecode.jmxtrans.exceptions.LifecycleException;
 import com.googlecode.jmxtrans.model.NamingStrategy;
 import com.googlecode.jmxtrans.model.Result;
-import com.googlecode.jmxtrans.model.naming.ClassAttributeNamingStrategy;
-import com.googlecode.jmxtrans.model.naming.JexlNamingStrategy;
 import com.googlecode.jmxtrans.model.naming.typename.TypeNameValue;
 import com.googlecode.jmxtrans.model.naming.typename.TypeNameValuesStringBuilder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import org.apache.commons.jexl2.JexlException;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,22 +71,14 @@ public class InfluxDBMessageFormatter {
 	public InfluxDBMessageFormatter(@Nonnull ImmutableList<String> typeNames,
 									@Nonnull ImmutableMap<String, String> tags,
 									@Nonnull String tagName,
-									@Nullable String metricNamingExpression,
+									@Nonnull NamingStrategy metricNameStrategy,
 									boolean mergeTypeNamesTags,
 									boolean allKeysAsTags,
 									@Nullable String hostnameTag) throws UnknownHostException, LifecycleException {
 		this.typeNames = typeNames;
 		this.tags = tags;
 		this.tagName = tagName;
-		if (metricNamingExpression != null) {
-			try {
-				metricNameStrategy = new JexlNamingStrategy(metricNamingExpression);
-			} catch (JexlException jexlExc) {
-				throw new LifecycleException("failed to setup naming strategy", jexlExc);
-			}
-		} else {
-			metricNameStrategy = new ClassAttributeNamingStrategy();
-		}
+		this.metricNameStrategy = metricNameStrategy;
 		this.mergeTypeNamesTags = mergeTypeNamesTags;
 		this.allKeysAsTags = allKeysAsTags;
 		this.hostnameTag = hostnameTag;

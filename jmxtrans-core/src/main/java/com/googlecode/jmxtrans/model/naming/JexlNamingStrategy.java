@@ -70,7 +70,7 @@ public class JexlNamingStrategy implements NamingStrategy {
 	public static final String VAR_RESULT = "result";
 
 	protected JexlEngine jexl;
-	protected Expression parsedExpr;
+	protected final Expression parsedExpr;
 
 
 	/**
@@ -111,10 +111,6 @@ public class JexlNamingStrategy implements NamingStrategy {
 		}
 
 		return formatted;
-	}
-
-	public void setExpression(String expr) throws JexlException {
-		this.parsedExpr = this.jexl.createExpression(expr);
 	}
 
 	/**

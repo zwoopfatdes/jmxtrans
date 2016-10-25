@@ -24,41 +24,47 @@ package com.googlecode.jmxtrans.model.output;
 
 import com.google.common.collect.ImmutableList;
 import com.googlecode.jmxtrans.model.Result;
+import com.googlecode.jmxtrans.model.ResultFixtures;
 import com.googlecode.jmxtrans.model.output.support.influxdb.InfluxDBMessageFormatter;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.util.List;
 
-public class InfluxDBTCPWriter2Test {
+import static com.googlecode.jmxtrans.model.ResultFixtures.dummyResults;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
 
-  private InfluxDBMessageFormatter influxDBMessageFormatter;
-  private InfluxDBTCPWriter2 writer;
-  private Writer outputWriter;
-  private Result result;
+public class InfluxDBWriterTest {
 
-  @Before
-  public void setup() {
-    influxDBMessageFormatter = Mockito.mock(InfluxDBMessageFormatter.class);
-    writer = new InfluxDBTCPWriter2(influxDBMessageFormatter);
-    outputWriter = Mockito.mock(Writer.class);
-    result = Mockito.mock(Result.class);
-  }
+	private InfluxDBMessageFormatter influxDBMessageFormatter;
+	private InfluxDBWriter writer;
 
-  @Test
-  public void testMultipleSend() throws IOException {
+	@Before
+	public void setup() {
+		influxDBMessageFormatter = Mockito.mock(InfluxDBMessageFormatter.class);
+		writer = new InfluxDBWriter(influxDBMessageFormatter);
+	}
 
-    ImmutableList<Result> results = ImmutableList.of(result, result);
-    List<String> resultsString = ImmutableList.of("Result1", "Result2");
+	@Test
+	public void testMultipleSend() throws IOException {
+		// NOTE: it might make sense to test with the real message formatter and not a mock
+		when(influxDBMessageFormatter.formatResults(dummyResults()))
+				.thenReturn(ImmutableList.of("Result1", "Result2", "Result3"));
 
-    Mockito.when(influxDBMessageFormatter.formatResults(results)).thenReturn(resultsString);
+		StringWriter out = new StringWriter();
 
-    writer.write(outputWriter, null, null, results);
+		writer.write(out, null, null, dummyResults());
 
-    Mockito.verify(outputWriter).write("Result1");
-    Mockito.verify(outputWriter).write("Result2");
-  }
+		assertThat(out.toString())
+				.startsWith("Result1")
+				.contains("Result2")
+				.endsWith("Result3");
+	}
+
 }

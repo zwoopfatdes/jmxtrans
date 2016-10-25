@@ -22,9 +22,12 @@
  */
 package com.googlecode.jmxtrans.model;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 /**
  * Strategy for naming metrics, tags, and the like given a result.
  */
+@ThreadSafe
 public interface NamingStrategy {
 	String formatName(Result result);
 }
