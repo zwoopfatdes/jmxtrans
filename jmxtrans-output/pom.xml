@@ -50,14 +50,18 @@
 		writers to a specific module, we can ensure this has minimal impact.</description>
 
 	<modules>
+<!--
 		<module>jmxtrans-output-cloudwatch</module>
+-->
 		<module>jmxtrans-output-core</module>
+<!--
 		<module>jmxtrans-output-ganglia</module>
 		<module>jmxtrans-output-jrobin</module>
 		<module>jmxtrans-output-log4j</module>
 		<module>jmxtrans-output-velocity</module>
 		<module>jmxtrans-output-kafka</module>
 		<module>jmxtrans-output-elastic</module>
+-->
 		<module>jmxtrans-output-influxdb</module>
 	</modules>
 

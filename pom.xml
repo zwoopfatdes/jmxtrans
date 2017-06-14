@@ -100,10 +100,14 @@
 	<modules>
 		<module>jmxtrans</module>
 		<module>jmxtrans-core</module>
+<!--
 		<module>jmxtrans-docker-test</module>
 		<module>jmxtrans-examples</module>
+-->
 		<module>jmxtrans-output</module>
+<!--
 		<module>jmxtrans-packaging</module>
+-->
 		<module>jmxtrans-test-utils</module>
 		<module>jmxtrans-utils</module>
 	</modules>
