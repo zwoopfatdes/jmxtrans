@@ -32,6 +32,7 @@ import com.googlecode.jmxtrans.model.Result;
 import com.googlecode.jmxtrans.model.ResultAttribute;
 import com.googlecode.jmxtrans.model.Server;
 import com.googlecode.jmxtrans.model.naming.KeyUtils;
+import com.googlecode.jmxtrans.model.naming.typename.TypeNameValue;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDB.ConsistencyLevel;
 import org.influxdb.dto.BatchPoints;
@@ -69,6 +70,7 @@ public class InfluxDbWriter extends OutputWriterAdapter {
 	@Nonnull private final String retentionPolicy;
 	@Nonnull private final ImmutableMap<String,String> tags;
 	@Nonnull ImmutableList<String> typeNames;
+	@Nonnull private final boolean typeNamesAsTags;
 
 	/**
 	 * The {@link ImmutableSet} of {@link ResultAttribute} attributes of
@@ -91,6 +93,7 @@ public class InfluxDbWriter extends OutputWriterAdapter {
 			@Nonnull ConsistencyLevel writeConsistency,
 			@Nonnull String retentionPolicy,
 			@Nonnull ImmutableMap<String,String> tags,
+			@Nonnull boolean typeNamesAsTags,
 			@Nonnull ImmutableSet<ResultAttribute> resultAttributesToWriteAsTags,
 			@Nonnull ImmutableList<String> typeNames,
 			boolean createDatabase) {
@@ -100,6 +103,7 @@ public class InfluxDbWriter extends OutputWriterAdapter {
 		this.retentionPolicy = retentionPolicy;
 		this.influxDB = influxDB;
 		this.tags = tags;
+		this.typeNamesAsTags = typeNamesAsTags;
 		this.resultAttributesToWriteAsTags = resultAttributesToWriteAsTags;
 		this.createDatabase = createDatabase;
 	}
@@ -182,8 +186,14 @@ public class InfluxDbWriter extends OutputWriterAdapter {
 
 			// send the point if filteredValues isn't empty
 			if (!filteredValues.isEmpty()) {
-				filteredValues.put("_jmx_port", Integer.parseInt(server.getPort()));
 				Map<String, String> resultTagsToApply = buildResultTagMap(result);
+
+				if (typeNamesAsTags) {
+					Map<String, String> typeNameMap = TypeNameValue.extractMap(result.getTypeName());
+					for (Map.Entry<String, String> typeName : typeNameMap.entrySet()) {
+						resultTagsToApply.put("typeName-" + typeName.getKey(), typeName.getValue());
+					}
+       			}
 
 				Point point = Point.measurement(result.getKeyAlias()).time(result.getEpoch(), MILLISECONDS)
 						.tag(resultTagsToApply).fields(filteredValues).build();
