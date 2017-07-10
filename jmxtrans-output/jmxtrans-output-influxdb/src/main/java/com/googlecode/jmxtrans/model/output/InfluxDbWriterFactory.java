@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright © 2010 JmxTrans team
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -39,95 +39,100 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.collect.Sets.immutableEnumSet;
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 
 public class InfluxDbWriterFactory implements OutputWriterFactory {
 
-	private static final Logger LOG = LoggerFactory.getLogger(InfluxDbWriterFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InfluxDbWriterFactory.class);
 
-	/**
-	 * The deault <a href=
-	 * "https://influxdb.com/docs/v1.0/concepts/key_concepts.html#retention-policy">
-	 * The retention policy</a> for each measuremen where no retentionPolicy
-	 * setting is provided in the json config
-	 */
-	private static final String DEFAULT_RETENTION_POLICY = "autogen";
+    /**
+     * The deault <a href=
+     * "https://influxdb.com/docs/v1.0/concepts/key_concepts.html#retention-policy">
+     * The retention policy</a> for each measuremen where no retentionPolicy
+     * setting is provided in the json config
+     */
+    private static final String DEFAULT_RETENTION_POLICY = "autogen";
 
-	private final String database;
-	private final InfluxDB.ConsistencyLevel writeConsistency;
-	private final ImmutableMap<String, String> tags;
-	private final String retentionPolicy;
-	private final InfluxDB influxDB;
-	private final ImmutableSet<ResultAttribute> resultAttributesToWriteAsTags;
-	private final boolean booleanAsNumber;
-	private final boolean createDatabase;
-	private final ImmutableList<String> typeNames;
-	private final boolean typeNamesAsTags;
+    private final String database;
+    private final InfluxDB.ConsistencyLevel writeConsistency;
+    private final ImmutableMap<String, String> tags;
+    private final String retentionPolicy;
+    private final InfluxDB influxDB;
+    private final ImmutableSet<ResultAttribute> resultAttributesToWriteAsTags;
+    private final boolean booleanAsNumber;
+    private final boolean createDatabase;
+    private final ImmutableList<String> typeNames;
+    private final boolean typeNamesAsTags;
+    private final boolean topicAttribute;
 
-	/**
-	 * @param url      - The url e.g http://localhost:8086 to InfluxDB
-	 * @param username - The username for InfluxDB
-	 * @param password - The password for InfluxDB
-	 * @param database - The name of the database (created if does not exist) on
-	 */
-	@JsonCreator
-	public InfluxDbWriterFactory(
-			@JsonProperty("typeNames") ImmutableList<String> typeNames,
-			@JsonProperty("booleanAsNumber") boolean booleanAsNumber,
-			@JsonProperty("url") String url,
-			@JsonProperty("username") String username,
-			@JsonProperty("password") String password,
-			@JsonProperty("database") String database,
-			@JsonProperty("tags") ImmutableMap<String, String> tags,
-			@JsonProperty("typeNamesAsTags") Boolean typeNamesAsTags,
-			@JsonProperty("writeConsistency") String writeConsistency,
-			@JsonProperty("retentionPolicy") String retentionPolicy,
-			@JsonProperty("resultTags") List<String> resultTags,
-			@JsonProperty("createDatabase") Boolean createDatabase) {
-		this.typeNames = typeNames;
-		this.booleanAsNumber = booleanAsNumber;
-		this.database = database;
-		this.createDatabase = firstNonNull(createDatabase, TRUE);
+    /**
+     * @param url      - The url e.g http://localhost:8086 to InfluxDB
+     * @param username - The username for InfluxDB
+     * @param password - The password for InfluxDB
+     * @param database - The name of the database (created if does not exist) on
+     */
+    @JsonCreator
+    public InfluxDbWriterFactory(
+            @JsonProperty("typeNames") ImmutableList<String> typeNames,
+            @JsonProperty("booleanAsNumber") boolean booleanAsNumber,
+            @JsonProperty("url") String url,
+            @JsonProperty("username") String username,
+            @JsonProperty("password") String password,
+            @JsonProperty("database") String database,
+            @JsonProperty("tags") ImmutableMap<String, String> tags,
+            @JsonProperty("typeNamesAsTags") Boolean typeNamesAsTags,
+            @JsonProperty("topicAttribute") Boolean topicAttribute,
+            @JsonProperty("writeConsistency") String writeConsistency,
+            @JsonProperty("retentionPolicy") String retentionPolicy,
+            @JsonProperty("resultTags") List<String> resultTags,
+            @JsonProperty("createDatabase") Boolean createDatabase) {
+        this.typeNames = typeNames;
+        this.booleanAsNumber = booleanAsNumber;
+        this.database = database;
+        this.createDatabase = firstNonNull(createDatabase, TRUE);
 
-		this.writeConsistency = StringUtils.isNotBlank(writeConsistency)
-				? InfluxDB.ConsistencyLevel.valueOf(writeConsistency) : InfluxDB.ConsistencyLevel.ALL;
+        this.writeConsistency = StringUtils.isNotBlank(writeConsistency)
+                ? InfluxDB.ConsistencyLevel.valueOf(writeConsistency) : InfluxDB.ConsistencyLevel.ALL;
 
-		this.retentionPolicy = StringUtils.isNotBlank(retentionPolicy) ? retentionPolicy : DEFAULT_RETENTION_POLICY;
+        this.retentionPolicy = StringUtils.isNotBlank(retentionPolicy) ? retentionPolicy : DEFAULT_RETENTION_POLICY;
 
-		this.resultAttributesToWriteAsTags = initResultAttributesToWriteAsTags(resultTags);
-		this.tags = initCustomTagsMap(tags);
-		this.typeNamesAsTags = firstNonNull(typeNamesAsTags, TRUE);
-		LOG.debug("Connecting to url: {} as: username: {}", url, username);
+        this.resultAttributesToWriteAsTags = initResultAttributesToWriteAsTags(resultTags);
+        this.tags = initCustomTagsMap(tags);
+        this.typeNamesAsTags = firstNonNull(typeNamesAsTags, TRUE);
+        this.topicAttribute = firstNonNull(topicAttribute, FALSE);
+        LOG.debug("Connecting to url: {} as: username: {}", url, username);
 
-		influxDB = InfluxDBFactory.connect(url, username, password);
-	}
+        influxDB = InfluxDBFactory.connect(url, username, password);
+    }
 
 
-	private ImmutableMap<String, String> initCustomTagsMap(ImmutableMap<String, String> tags) {
-		return ImmutableMap.copyOf(firstNonNull(tags, Collections.<String,String>emptyMap()));
-	}
+    private ImmutableMap<String, String> initCustomTagsMap(ImmutableMap<String, String> tags) {
+        return ImmutableMap.copyOf(firstNonNull(tags, Collections.<String, String>emptyMap()));
+    }
 
-	private ImmutableSet<ResultAttribute> initResultAttributesToWriteAsTags(List<String> resultTags) {
-		EnumSet<ResultAttribute> resultAttributes = EnumSet.noneOf(ResultAttribute.class);
-		if (resultTags != null) {
-			for (String resultTag : resultTags) {
-				resultAttributes.add(ResultAttribute.fromAttribute(resultTag));
-			}
-		} else {
-			resultAttributes = EnumSet.allOf(ResultAttribute.class);
-		}
+    private ImmutableSet<ResultAttribute> initResultAttributesToWriteAsTags(List<String> resultTags) {
+        EnumSet<ResultAttribute> resultAttributes = EnumSet.noneOf(ResultAttribute.class);
+        if (resultTags != null) {
+            for (String resultTag : resultTags) {
+                resultAttributes.add(ResultAttribute.fromAttribute(resultTag));
+            }
+        } else {
+            resultAttributes = EnumSet.allOf(ResultAttribute.class);
+        }
 
-		ImmutableSet<ResultAttribute> result = immutableEnumSet(resultAttributes);
-		LOG.debug("Result Tags to write set to: {}", result);
-		return result;
-	}
+        ImmutableSet<ResultAttribute> result = immutableEnumSet(resultAttributes);
+        LOG.debug("Result Tags to write set to: {}", result);
+        return result;
+    }
 
-	@Override
-	public ResultTransformerOutputWriter<InfluxDbWriter> create() {
-		return ResultTransformerOutputWriter.booleanToNumber(booleanAsNumber, new InfluxDbWriter(influxDB, database,
-				writeConsistency, retentionPolicy, tags, typeNamesAsTags, resultAttributesToWriteAsTags, typeNames, createDatabase));
-	}
+    @Override
+    public ResultTransformerOutputWriter<InfluxDbWriter> create() {
+        return ResultTransformerOutputWriter.booleanToNumber(booleanAsNumber, new InfluxDbWriter(influxDB, database,
+                writeConsistency, retentionPolicy, tags, typeNamesAsTags, topicAttribute, resultAttributesToWriteAsTags, typeNames, createDatabase));
+    }
 }
